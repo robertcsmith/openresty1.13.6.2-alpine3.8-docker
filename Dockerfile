@@ -15,7 +15,7 @@ For this project, the following volumes, bind mount directories and source code 
   Named Volumes:\
     - phpmyadmin-openresty-socket:/var/run/php/phpmyadmin \
     - wufgear-openresty-socket:/var/run/php/wufgear \
-  Bind-mounta:\
+  Bind-mounts:\
     - /app/binds/openresty/usr-local-etc-php-fpm.d:/usr/local/etc/php-fpm.d \
   Source code: (where the application code resides and should be changed into named volumes for production:\
     - /app/src/phpmyadmin:/var/www/phpmyadmin \
@@ -64,10 +64,8 @@ ARG _RESTY_CONFIG_DEPS="--with-openssl=/tmp/openssl-${RESTY_OPENSSL_VERSION} --w
 
 # Set system GIDs (make sure they are the same on each PHP Dockerfile and assign to the "app" user
 RUN set -ex; \
-    addgroup -S -g 82 www-data; \
-    addgroup -S -g 101 nginx; \
-    addgroup app www-data; \
-    addgroup app nginx;
+    addgroup -S -g 82 www-data && addgroup -S -g 101 nginx; \
+    addgroup app www-data && addgroup app nginx;
 
 RUN set -xe; \
     # Update apk's indexes
@@ -96,8 +94,8 @@ RUN set -xe; \
     && ./configure -j${RESTY_J} ${_RESTY_CONFIG_DEPS} ${RESTY_CONFIG_OPTIONS} ${RESTY_CONFIG_OPTIONS_MORE} \
     && make -j${RESTY_J} && make -j${RESTY_J} install; \
     # Symlink access and error log locations
-    ln -sf /dev/stdout /usr/local/openresty/nginx/logs/access.log \
-    && ln -sf /dev/stderr /usr/local/openresty/nginx/logs/error.log; \
+    ln -sf /dev/stdout /usr/local/nginx/logs/access.log \
+    && ln -sf /dev/stderr /usr/local/nginx/logs/error.log; \
     # Cleanup
     cd /tmp && rm -rf openssl-${RESTY_OPENSSL_VERSION}.tar.gz openssl-${RESTY_OPENSSL_VERSION} \
         openresty-${RESTY_VERSION}.tar.gz openresty-${RESTY_VERSION} \
@@ -105,10 +103,10 @@ RUN set -xe; \
     apk del .build-deps && rm -rf /var/cache/apk/* 2>/dev/null; \
 
 # Add additional binaries into PATH for convenience
-ENV PATH=$PATH:/usr/local/openresty/luajit/bin:/usr/local/nginx/sbin:/usr/local/openresty/bin
+ENV PATH=$PATH:/usr/local/nginx/luajit/bin:/usr/local/nginx/sbin:/usr/local/openresty/bin
 
 # Copy nginx configuration files
-COPY --chown=app:nginx files/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
+COPY --chown=app:nginx files/nginx.conf /usr/local/nginx/conf/nginx.conf
 COPY --chown=app:nginx files/fastcgi-params /etc/nginx/fastcgi-params
 COPY --chown=app:nginx files/mime.types /etc/nginx/mime.types
 
@@ -116,7 +114,7 @@ COPY --chown=app:nginx files/mime.types /etc/nginx/mime.types
 RUN set -xe; \
     mkdir -p /etc/nginx/conf.d /var/run/nginx /var/run/php/wufgear && touch /var/run/nginx/openresty.pid; \
     chown -rf app:nginx /var/run/nginx /etc/nginx/*; \
-    chmod -rf 0660 /var/run/nginx /etc/nginx/* && chmod -R 0777 /etc/nginx/conf.d;
+    chmod -rf 0660 /var/run/nginx /etc/nginx/* && chmod -rf 0777 /etc/nginx/conf.d;
 
 EXPOSE 80 443
 

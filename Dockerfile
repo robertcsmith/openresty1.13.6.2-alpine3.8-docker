@@ -27,36 +27,34 @@ ARG RESTY_VERSION="1.13.6.2"
 ARG RESTY_OPENSSL_VERSION="1.0.2p"
 ARG RESTY_PCRE_VERSION="8.42"
 ARG RESTY_J="1"
-ARG RESTY_CONFIG_OPTIONS="\
-    --with-file-aio \
-    --with-http_addition_module \
-    --with-http_auth_request_module \
-    --with-http_dav_module \
-    --with-http_flv_module \
-    --with-http_geoip_module=dynamic \
-    --with-http_gunzip_module \
-    --with-http_gzip_static_module \
-    --with-http_image_filter_module=dynamic \
-    --with-http_mp4_module \
-    --with-http_random_index_module \
-    --with-http_realip_module \
-    --with-http_secure_link_module \
-    --with-http_slice_module \
-    --with-http_ssl_module \
-    --with-http_stub_status_module \
-    --with-http_sub_module \
-    --with-http_v2_module \
-    --with-http_xslt_module=dynamic \
-    --with-ipv6 \
-    --with-mail \
-    --with-mail_ssl_module \
-    --with-md5-asm \
-    --with-pcre-jit \
-    --with-sha1-asm \
-    --with-stream \
-    --with-stream_ssl_module \
-    --with-threads \
-    "
+ARG RESTY_CONFIG_OPTIONS=" --with-file-aio \
+--with-http_addition_module \
+--with-http_auth_request_module \
+--with-http_dav_module \
+--with-http_flv_module \
+--with-http_geoip_module=dynamic \
+--with-http_gunzip_module \
+--with-http_gzip_static_module \
+--with-http_image_filter_module=dynamic \
+--with-http_mp4_module \
+--with-http_random_index_module \
+--with-http_realip_module \
+--with-http_secure_link_module \
+--with-http_slice_module \
+--with-http_ssl_module \
+--with-http_stub_status_module \
+--with-http_sub_module \
+--with-http_v2_module \
+--with-http_xslt_module=dynamic \
+--with-ipv6 \
+--with-mail \
+--with-mail_ssl_module \
+--with-md5-asm \
+--with-pcre-jit \
+--with-sha1-asm \
+--with-stream \
+--with-stream_ssl_module \
+--with-threads"
 ARG RESTY_CONFIG_OPTIONS_MORE=""
 
 # These are not intended to be user-specified
@@ -97,10 +95,15 @@ RUN set -xe; \
     ln -sf /dev/stdout /usr/local/nginx/logs/access.log \
     && ln -sf /dev/stderr /usr/local/nginx/logs/error.log; \
     # Cleanup
-    cd /tmp && rm -rf openssl-${RESTY_OPENSSL_VERSION}.tar.gz openssl-${RESTY_OPENSSL_VERSION} \
-        openresty-${RESTY_VERSION}.tar.gz openresty-${RESTY_VERSION} \
-        pcre-${RESTY_PCRE_VERSION}.tar.gz pcre-${RESTY_PCRE_VERSION}; \
-    apk del .build-deps && rm -rf /var/cache/apk/* 2>/dev/null; \
+    cd /tmp && rm -rf \
+        openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
+        openssl-${RESTY_OPENSSL_VERSION} \
+        openresty-${RESTY_VERSION}.tar.gz \
+        openresty-${RESTY_VERSION} \
+        pcre-${RESTY_PCRE_VERSION}.tar.gz \
+        pcre-${RESTY_PCRE_VERSION}; \
+        apk del .build-deps; \
+        rm -rf /var/cache/apk/* 2>/dev/null;
 
 # Add additional binaries into PATH for convenience
 ENV PATH=$PATH:/usr/local/nginx/luajit/bin:/usr/local/nginx/sbin:/usr/local/openresty/bin
@@ -112,10 +115,12 @@ COPY --chown=app:nginx files/mime.types /etc/nginx/mime.types
 
 # Create additional directories used for FPM users
 RUN set -xe; \
-    mkdir -p /etc/nginx/conf.d /var/run/nginx /var/run/php/wufgear && touch /var/run/nginx/openresty.pid; \
+    mkdir -p /etc/nginx/conf.d /var/run/nginx /var/run/php/wufgear;
+    touch /var/run/nginx/openresty.pid; \
     chown -rf app:nginx /var/run/nginx /etc/nginx/*; \
-    chmod -rf 0660 /var/run/nginx /etc/nginx/* && chmod -rf 0777 /etc/nginx/conf.d;
+    chmod -rf 0660 /var/run/nginx /etc/nginx/*; \
+    chmod -rf 0775 /etc/nginx/conf.d;
 
 EXPOSE 80 443
 
-CMD ["/usr/local/openresty/bin/openresty", "-g", "daemon off;"]
+CMD [ "/usr/local/openresty/bin/openresty", "-g", "daemon off;" ]
